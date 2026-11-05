@@ -1,21 +1,19 @@
-// Tiny procedural soundscape — wind, water, chitin and birdsong.
-export class Soundscape {
+// Tiny procedural sound kit for Night Rally. No files, no network.
+export class SoundKit {
   constructor() {
     this.ctx = null;
     this.master = null;
-    this.noise = null;
-    this.ready = false;
+    this.noiseBuffer = null;
     this.muted = false;
-    this.zone = 'garden';
-    this.nextChirp = 4;
-    this.nextCricket = 2;
-    this.windGain = null;
-    this.droneGain = null;
-    this.filter = null;
+    try {
+      this.muted = localStorage.getItem('night-rally-muted') === '1';
+    } catch (err) {
+      this.muted = false;
+    }
   }
 
   init() {
-    if (this.ready) {
+    if (this.ctx) {
       if (this.ctx.state === 'suspended') this.ctx.resume();
       return;
     }
@@ -23,189 +21,166 @@ export class Soundscape {
     if (!AC) return;
     try {
       this.ctx = new AC();
-    } catch (e) {
-      return;
-    }
-    this.master = this.ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.5;
-    this.master.connect(this.ctx.destination);
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.muted ? 0 : 0.52;
+      const limiter = this.ctx.createDynamicsCompressor();
+      limiter.threshold.value = -14;
+      limiter.knee.value = 18;
+      limiter.ratio.value = 5;
+      limiter.attack.value = 0.002;
+      limiter.release.value = 0.18;
+      this.master.connect(limiter).connect(this.ctx.destination);
 
-    // noise source (wind / rustle / bite texture)
-    const len = this.ctx.sampleRate * 2;
-    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < len; i++) {
-      const white = Math.random() * 2 - 1;
-      last = last * 0.96 + white * 0.04;
-      data[i] = last * 3.2;
-    }
-    this.noise = buf;
-
-    const wind = this.ctx.createBufferSource();
-    wind.buffer = buf;
-    wind.loop = true;
-    this.filter = this.ctx.createBiquadFilter();
-    this.filter.type = 'lowpass';
-    this.filter.frequency.value = 700;
-    this.windGain = this.ctx.createGain();
-    this.windGain.gain.value = 0.045;
-    wind.connect(this.filter).connect(this.windGain).connect(this.master);
-    wind.start();
-
-    // low forest drone
-    this.droneGain = this.ctx.createGain();
-    this.droneGain.gain.value = 0.018;
-    this.droneGain.connect(this.master);
-    for (const [f, g] of [[55, 0.55], [82.5, 0.32], [110.2, 0.14]]) {
-      const o = this.ctx.createOscillator();
-      o.type = 'sine';
-      o.frequency.value = f;
-      const og = this.ctx.createGain();
-      og.gain.value = g;
-      o.connect(og).connect(this.droneGain);
-      o.start();
-    }
-
-    this.ready = true;
-  }
-
-  setMuted(m) {
-    this.muted = m;
-    if (this.master) {
-      this.master.gain.setTargetAtTime(m ? 0 : 0.5, this.ctx.currentTime, 0.15);
+      const length = Math.floor(this.ctx.sampleRate * 0.7);
+      this.noiseBuffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+      const data = this.noiseBuffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+    } catch (err) {
+      this.ctx = null;
     }
   }
 
-  setZone(zoneId) {
-    this.zone = zoneId;
-    if (!this.ready) return;
-    const freqs = { garden: 780, meadow: 640, edge: 420, deep: 260 };
-    const drone = { garden: 0.014, meadow: 0.018, edge: 0.024, deep: 0.03 };
-    const now = this.ctx.currentTime;
-    this.filter.frequency.setTargetAtTime(freqs[zoneId] || 600, now, 2);
-    this.droneGain.gain.setTargetAtTime(drone[zoneId] || 0.02, now, 2);
+  resume() {
+    if (!this.ctx) this.init();
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
   }
 
-  update(dt, zoneId, playing) {
-    if (!this.ready || !playing) return;
-    this.nextChirp -= dt;
-    this.nextCricket -= dt;
-    if (this.nextChirp <= 0) {
-      this.nextChirp = 5 + Math.random() * 9;
-      if (zoneId === 'garden' || zoneId === 'meadow') this.chirp();
-    }
-    if (this.nextCricket <= 0) {
-      this.nextCricket = 2.4 + Math.random() * 4;
-      if (zoneId === 'edge' || zoneId === 'deep') this.cricket();
-    }
+  setMuted(muted) {
+    this.muted = muted;
+    try {
+      localStorage.setItem('night-rally-muted', muted ? '1' : '0');
+    } catch (err) { /* private mode */ }
+    if (!this.master || !this.ctx) return;
+    this.master.gain.setTargetAtTime(muted ? 0 : 0.52, this.ctx.currentTime, 0.015);
   }
 
-  tone(freq, dur, type = 'sine', vol = 0.08, glide = null, delay = 0) {
-    if (!this.ready) return;
+  toggleMuted() {
+    this.setMuted(!this.muted);
+    return this.muted;
+  }
+
+  tone({
+    freq = 440,
+    endFreq = null,
+    duration = 0.12,
+    type = 'sine',
+    volume = 0.08,
+    attack = 0.006,
+    delay = 0,
+    pan = 0,
+  } = {}) {
+    if (!this.ctx || this.muted) return;
     const ctx = this.ctx;
     const t0 = ctx.currentTime + delay;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(freq, t0);
-    if (glide) o.frequency.exponentialRampToValueAtTime(Math.max(30, glide), t0 + dur);
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(this.master);
-    o.start(t0);
-    o.stop(t0 + dur + 0.05);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    osc.type = type;
+    osc.frequency.setValueAtTime(Math.max(20, freq), t0);
+    if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), t0 + duration);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), t0 + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    if (panner) {
+      panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), t0);
+      osc.connect(gain).connect(panner).connect(this.master);
+    } else {
+      osc.connect(gain).connect(this.master);
+    }
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.03);
   }
 
-  burst(dur = 0.08, vol = 0.14, freq = 1200, type = 'bandpass') {
-    if (!this.ready) return;
+  noise({ duration = 0.05, volume = 0.05, freq = 1200, q = 0.9, type = 'bandpass', delay = 0, pan = 0 } = {}) {
+    if (!this.ctx || this.muted || !this.noiseBuffer) return;
     const ctx = this.ctx;
-    const t0 = ctx.currentTime;
-    const src = ctx.createBufferSource();
-    src.buffer = this.noise;
-    const f = ctx.createBiquadFilter();
-    f.type = type;
-    f.frequency.value = freq;
-    f.Q.value = 0.9;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(vol, t0);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(f).connect(g).connect(this.master);
-    src.start(t0, Math.random() * 1.2);
-    src.stop(t0 + dur + 0.02);
-  }
-
-  chirp() {
-    if (!this.ready) return;
-    const base = 1400 + Math.random() * 900;
-    const n = 2 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < n; i++) {
-      this.tone(base * (0.9 + Math.random() * 0.25), 0.055, 'sine', 0.018, base * 1.35, i * 0.09);
+    const t0 = ctx.currentTime + delay;
+    const source = ctx.createBufferSource();
+    source.buffer = this.noiseBuffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = type;
+    filter.frequency.value = freq;
+    filter.Q.value = q;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(Math.max(0.0001, volume), t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (panner) {
+      panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), t0);
+      source.connect(filter).connect(gain).connect(panner).connect(this.master);
+    } else {
+      source.connect(filter).connect(gain).connect(this.master);
     }
+    source.start(t0, Math.random() * 0.3);
+    source.stop(t0 + duration + 0.02);
   }
 
-  cricket() {
-    if (!this.ready) return;
-    const t0 = this.ctx.currentTime;
-    for (let i = 0; i < 3; i++) {
-      this.tone(3200 + Math.random() * 400, 0.035, 'triangle', 0.012, null, i * 0.06);
-    }
+  ui() {
+    this.tone({ freq: 620, endFreq: 840, duration: 0.055, volume: 0.025, type: 'triangle' });
   }
 
-  bite() {
-    this.burst(0.07, 0.18, 1600, 'bandpass');
-    this.tone(120, 0.1, 'sine', 0.05, 70);
+  select() {
+    this.tone({ freq: 460, endFreq: 680, duration: 0.07, volume: 0.03, type: 'triangle' });
   }
 
-  eat() {
-    this.tone(320, 0.12, 'sine', 0.05, 520);
-    this.tone(640, 0.08, 'triangle', 0.025, 820, 0.05);
+  ball(offset = 0, speed = 1) {
+    const p = Math.max(-0.75, Math.min(0.75, offset));
+    this.tone({ freq: 190 + speed * 38, endFreq: 130, duration: 0.09, volume: 0.085, type: 'sine', pan: p });
+    this.tone({ freq: 820 + speed * 90, endFreq: 480, duration: 0.045, volume: 0.035, type: 'triangle', pan: p });
+    this.noise({ duration: 0.04, volume: 0.028, freq: 1750, q: 1.2, pan: p });
   }
 
-  drink() {
-    this.tone(520, 0.12, 'sine', 0.035, 760);
-    this.tone(780, 0.14, 'sine', 0.02, 980, 0.08);
+  wall() {
+    this.tone({ freq: 130, endFreq: 68, duration: 0.12, volume: 0.06, type: 'sine' });
+    this.noise({ duration: 0.035, volume: 0.028, freq: 520, q: 0.8 });
   }
 
-  hurt() {
-    this.burst(0.12, 0.2, 700, 'lowpass');
-    this.tone(220, 0.24, 'sawtooth', 0.055, 90);
+  serveTick(high = false) {
+    this.tone({ freq: high ? 920 : 560, endFreq: high ? 1120 : 610, duration: 0.075, volume: 0.055, type: 'sine' });
+    this.noise({ duration: 0.025, volume: 0.015, freq: 2200, q: 1.4 });
   }
 
-  dash() {
-    this.burst(0.16, 0.12, 2400, 'highpass');
-    this.tone(180, 0.12, 'triangle', 0.03, 320);
-  }
-
-  evolve() {
-    const notes = [392, 523.25, 659.25, 783.99, 1046.5];
-    notes.forEach((f, i) => {
-      this.tone(f, 0.55, 'sine', 0.045, f * 1.01, i * 0.13);
-      this.tone(f / 2, 0.7, 'triangle', 0.02, f / 2, i * 0.13);
-    });
-    this.burst(0.7, 0.05, 900, 'lowpass');
-  }
-
-  death() {
-    [220, 174, 138, 110].forEach((f, i) => this.tone(f, 0.5, 'sine', 0.05, f * 0.7, i * 0.16));
-    this.burst(0.5, 0.06, 350, 'lowpass');
-  }
-
-  boss() {
-    this.tone(65, 1.4, 'sawtooth', 0.045, 48);
-    this.tone(97, 1.2, 'triangle', 0.03, 72);
-    this.burst(1.2, 0.06, 240, 'lowpass');
-  }
-
-  win() {
-    [261.63, 329.63, 392, 523.25, 659.25].forEach((f, i) => {
-      this.tone(f, 1.6, 'sine', 0.04, f, i * 0.12);
+  score(player = 1) {
+    const base = player === 0 ? 320 : 260;
+    const notes = player === 0 ? [1, 1.25, 1.5, 2] : [1, 0.84, 0.71];
+    notes.forEach((r, i) => {
+      this.tone({
+        freq: base * r,
+        endFreq: base * r * 1.01,
+        duration: 0.16,
+        volume: 0.07 - i * 0.006,
+        type: 'triangle',
+        delay: i * 0.075,
+      });
+      this.tone({
+        freq: base * r * 2,
+        duration: 0.1,
+        volume: 0.022,
+        type: 'sine',
+        delay: i * 0.075,
+      });
     });
   }
 
-  splash() {
-    this.burst(0.15, 0.08, 900, 'bandpass');
-    this.tone(400, 0.1, 'sine', 0.02, 600);
+  matchPoint() {
+    this.tone({ freq: 180, endFreq: 310, duration: 0.42, volume: 0.04, type: 'sine' });
+    this.tone({ freq: 900, duration: 0.09, volume: 0.03, type: 'triangle', delay: 0.08 });
+  }
+
+  win(youWon) {
+    const scale = youWon ? [1, 1.26, 1.5, 1.9, 2.38] : [1, 0.79, 0.63, 0.5];
+    const base = youWon ? 220 : 190;
+    scale.forEach((r, i) => {
+      this.tone({
+        freq: base * r,
+        duration: youWon ? 0.32 : 0.24,
+        volume: 0.055 - i * 0.004,
+        type: 'triangle',
+        delay: i * 0.105,
+      });
+    });
+    this.noise({ duration: 0.5, volume: 0.025, freq: 1600, type: 'highpass', q: 0.4 });
   }
 }
