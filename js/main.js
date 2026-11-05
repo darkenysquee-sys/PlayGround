@@ -21,6 +21,7 @@ const view = { w: window.innerWidth, h: window.innerHeight, dpr: 1 };
 const ui = {
   stageName: $('stageName'), stageNumeral: $('stageNumeral'), stageTrait: $('stageTrait'),
   stageZone: $('stageZone'), bioNum: $('bioNum'), bioMax: $('bioMax'),
+  miniJourney: $('miniJourney'),
   vitFill: $('vitFill'), vitNum: $('vitNum'), vitals: $('vitals'),
   hungFill: $('hungFill'), hungNum: $('hungNum'),
   thirstFill: $('thirstFill'), thirstNum: $('thirstNum'),
@@ -30,6 +31,7 @@ const ui = {
   zoneToast: $('zoneToast'), ztName: $('ztName'), ztLine: $('ztLine'),
   floatMsg: $('floatMsg'),
   titleScreen: $('titleScreen'), beginBtn: $('beginBtn'), continueBtn: $('continueBtn'),
+  titleControls: $('titleControls'),
   pauseScreen: $('pauseScreen'), resumeBtn: $('resumeBtn'), restartBtn: $('restartBtn'),
   evolveScreen: $('evolveScreen'), evolveName: $('evolveName'), evolveRoman: $('evolveRoman'),
   evolveTrait: $('evolveTrait'), evolveStats: $('evolveStats'), emergeBtn: $('emergeBtn'),
@@ -88,7 +90,7 @@ function nextFrame() {
 function resize() {
   view.w = window.innerWidth;
   view.h = window.innerHeight;
-  view.dpr = Math.min(window.devicePixelRatio || 1, 2);
+  view.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   canvas.width = Math.round(view.w * view.dpr);
   canvas.height = Math.round(view.h * view.dpr);
   canvas.style.width = `${view.w}px`;
@@ -476,6 +478,7 @@ function updatePlaying(dt) {
   updateMotes(sdt);
   updateCamera(dt);
   updateTimers(dt);
+  sound.update(dt, ZONES[game.zoneIndex].id, game.state === 'playing');
 
   if (game.state !== 'playing') return;
   if (game.winTimer > 0) {
@@ -498,16 +501,22 @@ function updatePlayer(dt) {
   const inp = inputVector();
   if (dashQueued) {
     dashQueued = false;
-    if (st.dash && p.dashCd <= 0 && inp.mag > 0.12) {
-      const l = Math.hypot(inp.x, inp.y) || 1;
-      p.dashVX = (inp.x / l) * st.speed * 2.8;
-      p.dashVY = (inp.y / l) * st.speed * 2.8;
+    if (st.dash && p.dashCd <= 0) {
+      // dash toward the stick/key direction, or straight ahead when standing still
+      let dx = inp.x, dy = inp.y;
+      if (inp.mag <= 0.12) {
+        dx = Math.cos(p.angle);
+        dy = Math.sin(p.angle);
+      }
+      const l = Math.hypot(dx, dy) || 1;
+      p.dashVX = (dx / l) * st.speed * 2.8;
+      p.dashVY = (dy / l) * st.speed * 2.8;
       p.dashT = 0.17;
       p.dashCd = 0.55;
-      p.angle = Math.atan2(inp.y, inp.x);
+      p.angle = Math.atan2(dy, dx);
       sound.dash();
       for (let i = 0; i < 7; i++) {
-        burst(p.x - inp.x * 10, p.y - inp.y * 10, '#c9c6a4', 1, {
+        burst(p.x - dx * 10, p.y - dy * 10, '#c9c6a4', 1, {
           speed: 40, life: 0.5, size: 2.4, type: 'dust',
         });
       }
@@ -948,6 +957,7 @@ function die() {
   if (game.state !== 'playing') return;
   const p = game.player;
   game.state = 'dead';
+  document.body.classList.add('dead');
   p.hp = 0;
   game.biomass = Math.floor(game.biomass * 0.78);
   game.hurtFlash = 1.1;
@@ -1100,7 +1110,13 @@ function render() {
   under.addColorStop(0.875, PALETTES.deep.paper);
   under.addColorStop(1, PALETTES.deep.paper);
   ctx.fillStyle = under;
-  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+  // only the feathered seams need the underlayer; the zone paintings are opaque elsewhere
+  for (const seam of [0, 1800, 3600, 5400, WORLD_W]) {
+    if (seam + 150 < left || seam - 150 > right) continue;
+    const x0 = Math.max(0, seam - 150);
+    const x1 = Math.min(WORLD_W, seam + 150);
+    ctx.fillRect(x0, 0, x1 - x0, WORLD_H);
+  }
 
   for (let i = 0; i < ZONES.length; i++) {
     const z = ZONES[i];
@@ -1400,6 +1416,10 @@ function updateUI() {
     setText(ui.moltNote, note);
   }
 
+  // skitter is a nymph trick; hide its touch button until the first molt
+  ui.dashBtn.style.display = game.stage >= 1 ? '' : 'none';
+  ui.dashBtn.classList.toggle('cooling', p.dashCd > 0.04);
+
   const pct = clamp((p.x / WORLD_W) * 100, 2, 98);
   ui.journeyFill.style.width = `${pct}%`;
   ui.journeyBug.style.left = `${pct}%`;
@@ -1407,6 +1427,12 @@ function updateUI() {
     el.classList.toggle('current', i === game.zoneIndex);
     el.classList.toggle('done', i < game.zoneIndex);
   });
+  if (ui.miniJourney) {
+    Array.from(ui.miniJourney.children).forEach((el, i) => {
+      el.classList.toggle('current', i === game.zoneIndex);
+      el.classList.toggle('done', i < game.zoneIndex);
+    });
+  }
 
   const boss = game.boss;
   const showBoss = game.bossEngaged && boss && boss.alive && !boss.sleeping && game.state === 'playing';
@@ -1429,8 +1455,8 @@ function updateHint() {
       hint = p.thirst < 28 ? 'Drink before you molt — the new skin needs water.' : 'You are ready. Press E to shed your skin.';
     } else if (p.thirst < 22) hint = 'Your shell is drying. Find still water on the path.';
     else if (p.hunger < 22) hint = 'Hunger. Something small is moving nearby.';
-    else if (game.stage === 0) hint = 'Eat aphids and nectar. Drink from the puddles.';
-    else if (game.stage === 1) hint = 'Chase the flies. The meadow opens to the east.';
+    else if (game.stage === 0) hint = 'Walk into aphids to bite. Drink from still water.';
+    else if (game.stage === 1) hint = 'Run down flies. The meadow opens to the east.';
     else if (game.stage === 2) hint = 'Hunt moths and spiders. The forest edge is close.';
     else hint = 'The deep wood breathes. Keep moving east.';
   }
@@ -1471,6 +1497,7 @@ function showOverlay(el) {
 async function startGame(save) {
   if (painting) return;
   painting = true;
+  document.body.classList.remove('paused', 'evolving', 'dead', 'won');
   sound.init();
   game.muted = !!game.muted;
   sound.setMuted(game.muted);
@@ -1518,7 +1545,7 @@ async function startGame(save) {
   game.state = 'playing';
   enterZone(ZONES[game.zoneIndex], true);
   if (game.stage > 0) flash(`Instar ${STAGES[game.stage].numeral} — ${STAGES[game.stage].name}`, 3000);
-  else flash('Eat. Drink. Shed. The garden is patient.', 3600);
+  else flash('Walk into prey to bite. Drink from still water. Shed when full.', 4800);
   saveGame();
   painting = false;
   rafLast = performance.now();
@@ -1550,6 +1577,7 @@ function beginEvolve() {
   const next = game.stage + 1;
   const st = STAGES[next];
   game.state = 'evolve';
+  document.body.classList.add('evolving');
   sound.evolve();
   const p = game.player;
   burst(p.x, p.y, '#d9c98d', 36, { speed: 160, life: 1.6, size: 3, type: 'spark' });
@@ -1581,6 +1609,7 @@ function emerge() {
   p.hurtT = 1.4;
   p.attackCd = 0.35;
   hideOverlay(ui.evolveScreen);
+  document.body.classList.remove('evolving');
   game.state = 'playing';
   game.nextMilestone = -1;
   game.shake = 6;
@@ -1595,6 +1624,7 @@ function emerge() {
 function pauseGame() {
   if (game.state !== 'playing') return;
   game.state = 'paused';
+  document.body.classList.add('paused');
   ui.pauseScreen.classList.add('show');
   saveGame();
 }
@@ -1602,6 +1632,7 @@ function pauseGame() {
 function resumeGame() {
   if (game.state !== 'paused') return;
   hideOverlay(ui.pauseScreen);
+  document.body.classList.remove('paused');
   game.state = 'playing';
   rafLast = performance.now();
 }
@@ -1626,6 +1657,7 @@ function showDeath() {
 
 function riseAgain() {
   hideOverlay(ui.deathScreen);
+  document.body.classList.remove('dead');
   const zi = Math.min(3, game.stage);
   const zone = ZONES[zi];
   const p = game.player;
@@ -1669,6 +1701,7 @@ function riseAgain() {
 function showWin() {
   if (game.state !== 'playing') return;
   game.state = 'win';
+  document.body.classList.add('won');
   game.bossEngaged = false;
   ui.winStats.innerHTML = `
     <div>time<b>${fmtTime(game.playTime)}</b></div>
@@ -1680,6 +1713,7 @@ function showWin() {
 
 function wanderOn() {
   hideOverlay(ui.winScreen);
+  document.body.classList.remove('won');
   game.state = 'playing';
   flash('The garden keeps going.', 3000);
   rafLast = performance.now();
@@ -1732,11 +1766,12 @@ function boot() {
 
   document.body.classList.toggle('touch', isTouch);
   if (isTouch) {
-    ui.titleControls.innerHTML = '<span>left stick</span> crawl &nbsp;·&nbsp; <span>skitter</span> dash &nbsp;·&nbsp; <span>molt</span> evolve';
+    ui.titleControls.innerHTML = '<span>left stick</span> crawl &nbsp;·&nbsp; <span>run into prey</span> to bite &nbsp;·&nbsp; <span>skitter</span> dash &nbsp;·&nbsp; <span>molt</span> evolve';
     const list = ui.pauseScreen.querySelector('.controls-list');
     if (list) {
       list.innerHTML = `
         <div><kbd>left stick</kbd><span>crawl</span></div>
+        <div><kbd>run into prey</kbd><span>bite smaller creatures</span></div>
         <div><kbd>skitter</kbd><span>a short burst</span></div>
         <div><kbd>molt</kbd><span>shed your skin</span></div>
         <div><kbd>pause</kbd><span>the button above</span></div>`;
