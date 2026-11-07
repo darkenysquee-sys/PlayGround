@@ -396,12 +396,25 @@ function initWorld(save) {
   setStage(game.stage, true);
 
   const p = game.player;
+  const wasDead = !!save && save.hp <= 0;
   if (save) {
-    p.x = clamp(save.x || 500, 60, WORLD_W - 60);
-    p.y = clamp(save.y || pathY(p.x), 60, WORLD_H - 60);
-    p.hp = clamp(save.hp || p.maxHp, 1, p.maxHp);
+    if (wasDead) {
+      const respawnZone = ZONES[Math.min(3, game.stage)];
+      p.x = respawnZone.x0 + 200;
+      p.y = pathY(p.x);
+    } else {
+      p.x = clamp(save.x || 500, 60, WORLD_W - 60);
+      p.y = clamp(save.y || pathY(p.x), 60, WORLD_H - 60);
+    }
+    p.hp = wasDead ? p.maxHp : clamp(save.hp ?? p.maxHp, 1, p.maxHp);
     p.hunger = clamp(save.hunger ?? 70, 0, 100);
     p.thirst = clamp(save.thirst ?? 62, 0, 100);
+    if (wasDead) {
+      p.hunger = Math.max(58, p.hunger);
+      p.thirst = Math.max(58, p.thirst);
+      p.hurtT = 1.8;
+      p.attackCd = 0.4;
+    }
   } else {
     p.x = 500;
     p.y = pathY(500);
