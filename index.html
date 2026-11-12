@@ -1,229 +1,58 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#efe6d0">
-<meta name="description" content="Molt — a watercolor fable of a small bug growing from the garden into the deep forest.">
-<title>Molt — a small life in a wide garden</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f4ecd8'/%3E%3Cellipse cx='16' cy='17' rx='9' ry='6' fill='%23537c6f'/%3E%3Ccircle cx='23' cy='14' r='4' fill='%23345a51'/%3E%3Cpath d='M11 23 8 28M16 24l-1 5M21 23l3 5' stroke='%23495b3e' stroke-width='1.4'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="./css/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#101813">
+  <meta name="description" content="Brotaluz: sobrevive a 30 oleadas, equipa armas y defiende el jardín salvaje.">
+  <title>Brotaluz — guardianes del jardín</title>
+  <link rel="stylesheet" href="./css/style.css">
 </head>
-<body class="is-title">
-<svg class="svg-defs" aria-hidden="true">
-  <symbol id="i-leaf" viewBox="0 0 24 24">
-    <path d="M20.5 3.6C11.2 3.4 4.4 7.7 4.1 15.2c0 2.4 1.1 4.1 1.1 4.1s2.6.5 4.6-.2c7.3-2.5 9.5-8.5 10.7-15.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M5.8 18.7C8.2 14 11.9 10 17.2 7.4" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-  </symbol>
-  <symbol id="i-drop" viewBox="0 0 24 24">
-    <path d="M12 3.2c3.7 5.5 6.6 8.7 6.6 12.4a6.6 6.6 0 0 1-13.2 0C5.4 11.9 8.3 8.7 12 3.2Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M9.3 14.6c.2 1.4 1.1 2.4 2.4 2.7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-  </symbol>
-  <symbol id="i-heart" viewBox="0 0 24 24">
-    <path d="M12 20.2c-1.3-.8-8-5.2-8-10.4a4.5 4.5 0 0 1 8-2.6 4.5 4.5 0 0 1 8 2.6c0 5.2-6.7 9.6-8 10.4Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M8.4 8.2c-.9.3-1.5 1-1.6 2" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-  </symbol>
-  <symbol id="i-pause" viewBox="0 0 24 24">
-    <path d="M8.7 5.4v13.2M15.3 5.4v13.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  <symbol id="i-sound" viewBox="0 0 24 24">
-    <path d="M4.4 9.4h3l4.2-3.4v12l-4.2-3.4h-3Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M15.2 8.6a5 5 0 0 1 0 6.8M17.9 6.1a8.4 8.4 0 0 1 0 11.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-  </symbol>
-  <symbol id="i-mute" viewBox="0 0 24 24">
-    <path d="M4.4 9.4h3l4.2-3.4v12l-4.2-3.4h-3Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="m15.3 9.5 4.5 5M19.8 9.5l-4.5 5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-  </symbol>
-  <symbol id="i-molt" viewBox="0 0 24 24">
-    <path d="M12 3.6c-3 3.2-5.4 6.2-5.4 9.6a5.4 5.4 0 0 0 10.8 0c0-3.4-2.4-6.4-5.4-9.6Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-    <path d="M9.7 13.6c.2 1.3 1 2.2 2.3 2.5" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-  </symbol>
-</svg>
+<body>
+  <main id="game-shell">
+    <canvas id="arena" aria-label="Arena de combate"></canvas>
+    <div class="vignette"></div>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✦</span><div><strong>BROTALUZ</strong><small>GUARDIANES DEL JARDÍN</small></div></div>
+      <div class="top-stats"><div class="stat-chip"><span class="stat-icon">✿</span><span id="coin-count">0</span></div><div class="stat-chip"><span>OLEADA</span><b id="wave-count">— / 30</b></div></div>
+      <button id="pause-button" class="icon-button" aria-label="Pausar" hidden>Ⅱ</button>
+    </header>
+    <section class="combat-hud" id="combat-hud" hidden>
+      <div class="wave-line"><div><span class="eyebrow" id="phase-label">FASE DE COMBATE</span><h2 id="wave-title">Oleada 1</h2></div><div class="timer" id="timer">00:30</div></div>
+      <div class="progress-track"><i id="wave-progress"></i></div>
+      <div class="health-row"><span class="heart">♥</span><div class="health-track"><i id="health-fill"></i></div><b id="health-text">100 / 100</b></div>
+      <div class="boss-health" id="boss-health" hidden><span>JEFE · <b id="boss-name">GUARDIÁN</b></span><div class="health-track"><i id="boss-fill"></i></div></div>
+    </section>
+    <div class="weapon-badges" id="weapon-badges" hidden></div>
+    <div class="touch-hint" id="touch-hint" hidden><span class="touch-orbit"></span><span>DESLIZA PARA MOVERTE</span></div>
+    <div class="toast" id="toast" role="status"></div>
 
-<div id="app">
-  <canvas id="game" aria-label="Molt game world"></canvas>
-  <div id="grain" aria-hidden="true"></div>
-
-  <div id="hud" aria-live="polite">
-    <div class="hud-top">
-      <section class="stage-card" id="stageCard">
-        <p class="eyebrow"><span id="stageNumeral">INSTAR I</span> · <span id="stageZone">GARDEN</span></p>
-        <h2 id="stageName">Larva</h2>
-        <p class="trait" id="stageTrait">Soft-bodied and overlooked. Everything is bigger than you.</p>
-        <div class="biomass">
-          <svg class="ico"><use href="#i-leaf"/></svg>
-          <span class="bio-num" id="bioNum">0</span>
-          <span class="bio-max" id="bioMax">/ 30</span>
-          <span class="bio-label">biomass</span>
-        </div>
-        <div class="mini-journey" id="miniJourney" aria-hidden="true">
-          <i></i><i></i><i></i><i></i>
-        </div>
-      </section>
-
-      <div class="hud-right">
-        <button class="round-btn" id="muteBtn" aria-label="Mute sound" title="Sound (M)">
-          <svg class="ico"><use href="#i-sound"/></svg>
-        </button>
-        <button class="round-btn" id="pauseBtn" aria-label="Pause game" title="Pause (Esc)">
-          <svg class="ico"><use href="#i-pause"/></svg>
-        </button>
+    <section class="screen title-screen" id="title-screen">
+      <div class="title-copy">
+        <p class="eyebrow">UNA AVENTURA DE SUPERVIVENCIA</p>
+        <h1>El jardín<br><em>despierta.</em></h1>
+        <p class="lede">Un pequeño guardián. Treinta oleadas. Un jardín que no piensa rendirse.</p>
+        <div class="title-facts"><span><b>30</b> oleadas</span><span><b>3</b> jefes</span><span><b>35</b> armas evolutivas</span></div>
+        <button class="primary-button" id="start-button">Comenzar partida <span>↗</span></button>
+        <p class="control-note">Un dedo para moverte · Tus armas atacan automáticamente</p>
       </div>
-    </div>
+      <div class="hero-art" aria-hidden="true"><div class="sun-glow"></div><div class="hero-flower flower-one">✿</div><div class="hero-flower flower-two">✿</div><div class="hero-flower flower-three">✿</div><div class="hero-bug"><span class="bug-wing"></span><span class="bug-body"></span><span class="bug-eye"></span><span class="bug-blade">╱</span></div><div class="hero-ground"></div></div>
+      <div class="title-footer"><span>HECHO PARA JUGAR CON UN DEDO</span><span id="record-label">RÉCORD: OLEADA 0</span></div>
+    </section>
 
-    <div class="journey" id="journey" aria-hidden="true">
-      <div class="journey-line"><div class="journey-fill" id="journeyFill"></div></div>
-      <div class="journey-stops">
-        <span class="stop" data-zone="0"><i></i>Garden</span>
-        <span class="stop" data-zone="1"><i></i>Meadow</span>
-        <span class="stop" data-zone="2"><i></i>Edge</span>
-        <span class="stop" data-zone="3"><i></i>Deep Wood</span>
+    <section class="screen shop-screen" id="shop-screen" hidden>
+      <div class="shop-wrap">
+        <header class="shop-header"><div><p class="eyebrow" id="shop-kicker">RESPIRO ENTRE OLEADAS</p><h2 id="shop-title">Prepara tu defensa</h2><p id="shop-subtitle">Elige mejoras antes de que vuelva la maleza.</p></div><div class="shop-wallet">✿ <b id="shop-coins">0</b><small>MONEDAS</small></div></header>
+        <nav class="shop-tabs" aria-label="Categorías de tienda"><button class="shop-tab active" data-tab="upgrades">Mejoras <span>✦</span></button><button class="shop-tab" data-tab="weapons">Arsenal <span>35</span></button><button class="shop-tab" data-tab="unlocks">Logros <span id="unlock-count">0</span></button></nav>
+        <div class="shop-content" id="shop-content"></div>
+        <footer class="shop-footer"><div class="equipped-line" id="equipped-line"></div><button class="primary-button" id="next-wave-button">¡A la oleada 1! <span>→</span></button></footer>
       </div>
-      <div class="journey-bug" id="journeyBug" title="you"></div>
-    </div>
+    </section>
 
-    <div class="boss" id="bossBar" hidden>
-      <p class="boss-name">The Mantis Queen</p>
-      <div class="boss-track"><div class="boss-fill" id="bossFill"></div></div>
-    </div>
-
-    <div class="zone-toast" id="zoneToast">
-      <p class="zt-name" id="ztName">The Garden</p>
-      <p class="zt-line" id="ztLine">where everything begins, small and warm</p>
-    </div>
-
-    <div class="hud-bottom">
-      <section class="vitals" id="vitals">
-        <div class="vital" data-kind="vitality">
-          <svg class="ico"><use href="#i-heart"/></svg>
-          <div class="track"><div class="fill" id="vitFill"></div></div>
-          <span class="num" id="vitNum">60</span>
-        </div>
-        <div class="vital" data-kind="hunger">
-          <svg class="ico"><use href="#i-leaf"/></svg>
-          <div class="track"><div class="fill" id="hungFill"></div></div>
-          <span class="num" id="hungNum">65</span>
-        </div>
-        <div class="vital" data-kind="thirst">
-          <svg class="ico"><use href="#i-drop"/></svg>
-          <div class="track"><div class="fill" id="thirstFill"></div></div>
-          <span class="num" id="thirstNum">55</span>
-        </div>
-      </section>
-
-      <div class="hint" id="hint">Eat. Drink. Shed.</div>
-    </div>
-
-    <div class="molt-wrap" id="moltWrap">
-      <button class="molt-btn" id="moltBtn" aria-label="Molt and evolve">
-        <span class="molt-halo"></span>
-        <svg class="ico molt-ico"><use href="#i-molt"/></svg>
-        <span class="molt-text">molt</span>
-        <kbd>E</kbd>
-      </button>
-      <div class="molt-track"><div class="molt-fill" id="moltFill"></div></div>
-      <p class="molt-note" id="moltNote">30 biomass to shed</p>
-    </div>
-
-    <button class="dash-btn" id="dashBtn" aria-label="Skitter dash">
-      <span class="dash-rings"></span>
-      <span>skitter</span>
-    </button>
-
-    <div class="stick" id="stick" aria-hidden="true">
-      <div class="stick-base" id="stickBase"></div>
-      <div class="stick-knob" id="stickKnob"></div>
-    </div>
-
-    <div class="float-msg" id="floatMsg"></div>
-  </div>
-
-  <div class="loading" id="loading">
-    <div class="loading-inner">
-      <div class="ink-dot"></div>
-      <p>the ink is drying…</p>
-      <div class="loading-track"><div id="loadingFill"></div></div>
-    </div>
-  </div>
-
-  <section class="overlay title-screen" id="titleScreen">
-    <canvas id="titleArt"></canvas>
-    <div class="title-scrim"></div>
-    <div class="title-inner">
-      <p class="kicker">an incremental watercolor fable</p>
-      <h1>Molt</h1>
-      <p class="tagline">A small life in a wide garden.<br>Eat what you can. Drink what you find. Shed what you were.</p>
-      <div class="title-actions">
-        <button class="btn primary" id="beginBtn">Begin as a larva</button>
-        <button class="btn ghost" id="continueBtn" hidden>Continue</button>
-      </div>
-      <p class="title-controls" id="titleControls">
-        <span>WASD / arrows</span> crawl &nbsp;·&nbsp; <span>walk into prey</span> to bite &nbsp;·&nbsp; <span>space</span> skitter &nbsp;·&nbsp; <span>E</span> molt
-      </p>
-      <p class="title-foot">Four small worlds. One patient appetite.</p>
-    </div>
-  </section>
-
-  <section class="overlay pause-screen" id="pauseScreen">
-    <div class="card pause-card">
-      <p class="kicker">a breath between leaves</p>
-      <h2>Paused</h2>
-      <div class="controls-list">
-        <div><kbd>W A S D</kbd><span>crawl</span></div>
-        <div><kbd>← ↑ ↓ →</kbd><span>crawl</span></div>
-        <div><kbd>pointer</kbd><span>steer toward the pointer</span></div>
-        <div><kbd>contact</kbd><span>bite smaller creatures</span></div>
-        <div><kbd>space</kbd><span>skitter — a short burst</span></div>
-        <div><kbd>E</kbd><span>molt when biomass is full</span></div>
-        <div><kbd>Esc</kbd><span>pause</span></div>
-      </div>
-      <p class="pause-tip">Eat small things. Drink from the still water on the path. When you are ready, shed your skin and reach further into the garden.</p>
-      <div class="card-actions">
-        <button class="btn primary" id="resumeBtn">Back to the leaves</button>
-        <button class="btn ghost" id="restartBtn">Begin a new life</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="overlay evolve-screen" id="evolveScreen">
-    <div class="evolve-wash"></div>
-    <div class="evolve-inner">
-      <p class="kicker" id="evolveKicker">the old skin splits</p>
-      <div class="evolve-roman" id="evolveRoman">II</div>
-      <h2 id="evolveName">Nymph</h2>
-      <p class="evolve-trait" id="evolveTrait">Six legs and sudden speed.</p>
-      <div class="evolve-stats" id="evolveStats"></div>
-      <button class="btn primary" id="emergeBtn">Emerge</button>
-      <p class="evolve-foot">you are still soft — eat, drink, and let the shell set</p>
-    </div>
-  </section>
-
-  <section class="overlay death-screen" id="deathScreen">
-    <div class="card death-card">
-      <p class="kicker">the garden is patient</p>
-      <h2>Returned to the soil</h2>
-      <p class="death-line" id="deathLine">You were smaller than the world. It happens.</p>
-      <div class="death-stats" id="deathStats"></div>
-      <button class="btn primary" id="riseBtn">Rise again</button>
-      <p class="death-foot">you keep your instar, but the garden takes a little back</p>
-    </div>
-  </section>
-
-  <section class="overlay win-screen" id="winScreen">
-    <div class="win-wash"></div>
-    <div class="win-inner">
-      <p class="kicker">the heartwood</p>
-      <h2>You are no longer small.</h2>
-      <p class="win-line">The Mantis Queen folds her arms. The forest steps aside. Somewhere behind you, a larva is chewing its first leaf.</p>
-      <div class="win-stats" id="winStats"></div>
-      <div class="card-actions">
-        <button class="btn primary" id="wanderBtn">Wander on</button>
-        <button class="btn ghost" id="againBtn">A new life</button>
-      </div>
-    </div>
-  </section>
-</div>
-
-<script type="module" src="./js/main.js"></script>
+    <section class="screen pause-screen" id="pause-screen" hidden><div class="modal-card"><p class="eyebrow">EL JARDÍN ESPERA</p><h2>En pausa</h2><p>Respira. Tus guardianes descansan contigo.</p><button class="primary-button" id="resume-button">Volver a jugar <span>→</span></button><button class="text-button" id="quit-button">Abandonar partida</button></div></section>
+    <section class="screen result-screen" id="result-screen" hidden><div class="modal-card result-card"><p class="eyebrow" id="result-kicker">LA NATURALEZA RECUERDA</p><h2 id="result-title">La partida termina</h2><p id="result-copy"></p><div class="result-stats" id="result-stats"></div><div id="result-unlocks"></div><button class="primary-button" id="again-button">Jugar otra vez <span>↗</span></button></div></section>
+    <div class="mobile-tip" id="mobile-tip" hidden>Arrastra en cualquier parte del campo para moverte</div>
+  </main>
+  <script src="./js/arena.js" defer></script>
 </body>
 </html>
