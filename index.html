@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#18251e" />
+  <title>Valle de Roble — Crónicas del Reino</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="game-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Valle de Roble, inicio">
+        <span class="brand-mark">♜</span><span><b>CRÓNICAS</b><small>DEL REINO</small></span>
+      </a>
+      <div class="realm-title"><span class="eyebrow">REINO DE ALDERIA</span><strong>Valle de Roble</strong></div>
+      <div class="header-right"><div class="season"><span>☀</span><span><b id="season-name">Primavera</b><small id="day-label">Día 1 · Año 1</small></span></div><button class="icon-btn" id="sound-btn" title="Activar o silenciar sonidos" aria-label="Sonido">♫</button><button class="avatar" title="Tu perfil">E</button></div>
+    </header>
+
+    <section class="resource-strip" aria-label="Recursos">
+      <div class="resource-item"><span class="res-icon wood">♣</span><span><small>MADERA</small><b id="wood">0</b><em id="wood-rate">+0 / día</em></span></div>
+      <div class="resource-item"><span class="res-icon stone">◆</span><span><small>PIEDRA</small><b id="stone">0</b><em id="stone-rate">+0 / día</em></span></div>
+      <div class="resource-item"><span class="res-icon iron">⬟</span><span><small>HIERRO</small><b id="iron">0</b><em id="iron-rate">+0 / día</em></span></div>
+      <div class="resource-item"><span class="res-icon food">✿</span><span><small>ALIMENTO</small><b id="food">0</b><em id="food-rate">+0 / día</em></span></div>
+      <div class="resource-item"><span class="res-icon gold">◉</span><span><small>ORO</small><b id="gold">0</b><em id="gold-rate">+0 / día</em></span></div>
+      <div class="resource-item military-resource"><span class="res-icon military">⚔</span><span><small>GUARNICIÓN</small><b id="military">0</b><em>fuerza militar</em></span></div>
+    </section>
+
+    <main class="main-layout">
+      <section class="city-column">
+        <div class="city-heading">
+          <div><div class="eyebrow"><span class="live-dot"></span> TU ASENTAMIENTO</div><h1>Valle de Roble <span class="age-pill" id="age-label">Aldea</span></h1><p>Un valle fértil espera a que escribas su historia.</p></div>
+          <button class="advance-btn" id="advance-btn"><span class="advance-icon">⌛</span><span><b>Avanzar día</b><small>Recoge producción</small></span><kbd>↵</kbd></button>
+        </div>
+
+        <div class="city-stats"><div><span class="stat-icon">⌂</span><span><small>POBLACIÓN</small><b id="population">12</b></span></div><div><span class="stat-icon">▦</span><span><small>EDIFICIOS</small><b id="building-count">3 <i>/ 9</i></b></span></div><div><span class="stat-icon">✧</span><span><small>PRESTIGIO</small><b id="prestige">18</b></span></div><div><span class="stat-icon">♨</span><span><small>ÁNIMO</small><b>Radiante</b></span></div></div>
+
+        <div class="map-heading"><div><span class="eyebrow">TU HOGAR, TU LEGADO</span><h2>Distrito central</h2></div><span class="map-hint">Selecciona una parcela para construir</span></div>
+        <div class="city-map-wrap">
+          <div class="map-ribbon"><span>✦</span> VALLE DE ROBLE <span>✦</span></div>
+          <div class="city-grid" id="city-grid" aria-label="Cuadrícula de ciudad 3 por 3"></div>
+          <div class="map-footer"><span>⌖</span> BOSQUE DE ALDERIA <i>·</i> RÍO PLATEADO <span class="weather">☀ 18°</span></div>
+        </div>
+        <div class="legend"><span><i class="legend-dot built"></i> Edificio activo</span><span><i class="legend-dot empty"></i> Parcela disponible</span><span class="production-note">La producción se recoge cada día</span></div>
+
+        <section class="milestone-card" id="age-card"><div class="milestone-emblem">♛</div><div class="milestone-copy"><span class="eyebrow">EL CAMINO DE LA CIVILIZACIÓN</span><h3 id="age-heading">Una aldea con futuro</h3><p id="age-copy">Cumple objetivos sencillos para descubrir nuevos edificios y hacer crecer tu reino.</p></div><div class="milestone-progress"><b id="progress-text">0 / 3</b><div class="progress-track"><i id="progress-fill"></i></div><small>hitos completados</small></div></section>
+      </section>
+
+      <aside class="side-column">
+        <section class="panel objectives-panel"><div class="panel-title"><div><span class="eyebrow">PASO A PASO</span><h2>Tu próximo objetivo</h2></div><span class="panel-icon">✦</span></div><p class="panel-intro">Pequeñas metas, grandes ciudades.</p><div id="objectives" class="objectives-list"></div></section>
+        <section class="panel ranking-panel"><div class="panel-title"><div><span class="eyebrow">REINOS DE ALDERIA</span><h2>Tabla de honor</h2></div><span class="panel-icon trophy">♜</span></div><p class="panel-intro">Las ciudades más prósperas del reino.</p><div id="ranking" class="ranking-list"></div><div class="rank-note"><span>↗</span> Construye y prospera para subir puestos</div></section>
+        <section class="tip-card"><span class="tip-mark">“</span><div><small>CONSEJO DEL CONSEJO</small><p id="tip-text">Una gran ciudad comienza con una buena despensa. Construye un granero para alimentar a tu gente.</p></div></section>
+      </aside>
+    </main>
+    <footer class="footer"><span>CRÓNICAS DEL REINO <i>·</i> EDICIÓN MEDIEVAL</span><span>Tu progreso se guarda automáticamente <b>●</b></span></footer>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop" aria-hidden="true"><section class="build-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="Cerrar">×</button><div id="modal-content"></div></section></div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="game.js"></script>
+</body>
+</html>
